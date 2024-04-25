@@ -317,3 +317,17 @@ def Eigen_adjusted(F_NW,U,Std_i,length=252,N_mc=1000):
     stat = np.sqrt(stat/N_mc)
     
     return stat
+
+
+def Gamma_fitting(gamma_k,para=2,n_start_fitting = 16):
+    # para: the scaling parameter "a"
+    # n_start_fitting: assign zero weight to the first "n_start_fitting" eigenfactor, here we choose 16 while UNE4 chooses 15
+    y = gamma_k[n_start_fitting:]
+    x = np.array(range(n_start_fitting,40))
+    z = np.polyfit(x, y, 2)
+    p = np.poly1d(z)
+    gamma_k_new = [p(xi) for xi in range(n_start_fitting)]+list(y)
+    
+    gamma_k_new = para*(np.array(gamma_k_new)-1)+1
+    
+    return gamma_k_new
