@@ -1,3 +1,8 @@
+# -*- coding = utf-8 -*-
+# @Time: 2024/09/21
+# @Author: Haohan
+# @File: Size.py
+# @Software: Vscode
 '''
 #### 1. 市值因子 Size
 ·Size(1):
