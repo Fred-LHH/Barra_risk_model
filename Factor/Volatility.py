@@ -16,7 +16,30 @@ import numpy as np
 import utils as ut
 from tqdm import tqdm
 
-def calc_Beta(close_code: pd.DataFrame, close_index: pd.DataFrame)
+def calc_Beta_HS(close_code: pd.DataFrame, close_index: pd.DataFrame, window: int = 252, half_life: int = 63):
+    '''
+    计算Beta和Hist_sigma
+    close_code: 股票close, pre_close
+    close_index: 指数close, pre_close
+    '''
+    price = pd.concat([close_code, close_index], axis=0).reset_index(drop=True)
+    price['ret'] = price['close'] / price['pre_close']
+    ret = pd.pivot_table(price, values='ret', index='trade_date', columns='code')
+    W = ut._get_exp_weight(window, half_life)
+
+    def _calc_factor(tmp):
+        # 不存在缺失值的股票
+        W = np.diag(W)
+        Y_f = tmp.dropna(axis=1).drop(columns='399300.SZ')
+        idx_f, Y_f = Y_f.columns, Y_f.values
+        X_f = np.c_[np.ones((window, 1)), tmp.loc[:, '399300.SZ'].values]
+        beta_f = np.linalg.pinv(X_f.T @ W @ X_f) @ X_f.T @ W @ Y_f
+        hist_sigma_f = pd.Series(np.std(Y_f - X_f @ beta_f, axis=0), index=idx_f, name=tmp.index[-1])
+        beta_f = pd.Series(beta_f[1], index=idx_f, name=tmp.index[-1])
+        # 存在缺失值的股票
+        
+
+
 
 
 
@@ -26,10 +49,6 @@ def Volatility(close_code: pd.DataFrame, close_index: pd.DataFrame, window: int 
     close_code: 股票close, pre_close
     close_index: 指数close, pre_close
     '''
-    price = pd.concat([close_code, close_index], axis=0).reset_index(drop=True)
-    price['ret'] = price['close'] / price['pre_close']
-    ret = pd.pivot_table(price, values='ret', index='trade_date', columns='code')
-    W = ut._get_exp_weight(window, half_life)
     # 计算BETA和Hist_sigma
     beta, hist_sigma = [], []
     for i in tqdm(range(len(ret) - window + 1), desc='开始计算beta...'):
