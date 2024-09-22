@@ -3,11 +3,6 @@
 # @Author: Haohan
 # @File: Liquidity.py
 # @Software: Vscode
-# -*- coding = utf-8 -*-
-# @Time: 2024/09/22
-# @Author: Haohan
-# @File: Liquidity.py
-# @Software: Vscode
 '''
 #### 3. 流动性 Liquidity
 Liquidity(1):
