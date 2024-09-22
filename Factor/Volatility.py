@@ -1,3 +1,8 @@
+# -*- coding = utf-8 -*-
+# @Time: 2024/09/22
+# @Author: Haohan
+# @File: Volatility.py
+# @Software: Vscode
 '''
 #### 2. 波动率 Volatility
 ·Volatility(1):
