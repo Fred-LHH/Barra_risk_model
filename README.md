@@ -4,3 +4,4 @@
 2. Volatility
 3. Liquidity
 4. Momentum
+5. Quality
