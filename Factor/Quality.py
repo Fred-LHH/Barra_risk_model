@@ -1,3 +1,8 @@
+# -*- coding = utf-8 -*-
+# @Time: 2024/09/23
+# @Author: Haohan
+# @File: Quality.py
+# @Software: Vscode
 '''
 #### 5. 质量 Quality
 ·Quality(1):
