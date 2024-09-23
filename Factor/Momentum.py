@@ -1,3 +1,8 @@
+# -*- coding = utf-8 -*-
+# @Time: 2024/09/23
+# @Author: Haohan
+# @File: Momentum.py
+# @Software: Vscode
 '''
 #### 4. 动量 Momentum
 ·Momentum(1):
