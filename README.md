@@ -2,3 +2,5 @@
 
 1. Size
 2. Volatility
+3. Liquidity
+4. Momentum
