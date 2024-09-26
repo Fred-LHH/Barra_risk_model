@@ -34,17 +34,18 @@ import numpy as np
 import utils as ut
 from tqdm import tqdm
 
-def calc_Leverage(data: pd.DataFrame):
+def calc_Leverage(data: pd.DataFrame, indicator: pd.DataFrame):
     data['PE'] = (data['oth_eqt_tools_p_shr'] / 1e8).fillna(0)
     data['LD'] = (data['total_ncl'] / 1e8).fillna(0)
+    data.rename(columns={'ts_code':'code'}, inplace=True)
     data['f_ann_date'] = pd.to_datetime(data['f_ann_date'])
-    data['total_mv'] = data.groupby('code')['total_mv'].shift(1)
-    data['total_mv'] = data['total_mv'] / 1e4 
+    indicator['total_mv'] = indicator.groupby('code')['total_mv'].shift(1)
+    indicator['total_mv'] = indicator['total_mv'] / 1e4 
     data['end_date'] = pd.to_datetime(data['end_date'])
     data['discDate'] = data['end_date'].apply(ut._discDate)
     data = data.query('f_ann_date<discDate').drop(columns=['ann_date', 'end_date', 'report_type', 'end_type', 'total_ncl', 'oth_eqt_tools_p_shr'])
     data = ut._pubDate_align_tradedate(data, 'discDate', '20240831')
-    data.rename(columns={'total_mv': 'ME'}, inplace=True)
+    data = pd.merge(data, indicator).rename(columns={'total_mv': 'ME'}, inplace=True)
     data['BE'] = data['ME'] / data['pb']
     data['Market_Leverage'] = data.eval('(ME+PE+LD)/ME')
     data['Book_Leverage'] = data.eval('(BE+PE+LD)/ME')
@@ -54,7 +55,6 @@ def calc_Leverage(data: pd.DataFrame):
 
 def calc_Earning_Variability(data: pd.DataFrame, forecast: pd.DataFrame, mv: pd.DataFrame):
     # 用TTM数据计算
-    data = data[['ts_code', 'f_ann_date_x', 'end_date', 'revenue', 'net_profit', 'n_incr_cash_cash_equ']].rename(columns={'f_ann_date_x':'ann_date', 'ts_code': 'code'})
     data.drop_duplicates(subset=['code', 'end_date'], keep='last', inplace=True)
     data['end_date'] = pd.to_datetime(data['end_date'])
     data = data[data['end_date'].dt.month.isin([6, 12])]
@@ -81,6 +81,7 @@ def calc_Earning_Variability(data: pd.DataFrame, forecast: pd.DataFrame, mv: pd.
     factor = factor.groupby('trade_date').apply(_modify).reset_index(drop=True)
     factor = ut._pubDate_align_tradedate(factor, 'trade_date', '20240831')
     
+    forecast_EP_std = []
     for year in tqdm(range(2014, 2025), desc='计算Standard deviation of analyst Earnings-to-Price...'):
         mask = (forecast['Fenddt'] == pd.to_datetime('{}1231'.format(year)))
         tmp = forecast[mask].copy()
@@ -94,7 +95,12 @@ def calc_Earning_Variability(data: pd.DataFrame, forecast: pd.DataFrame, mv: pd.
         forecast_EP_std.append(np_std)
     forecast_EP_std = pd.concat(forecast_EP_std, axis=0)
     forecast_EP_std = forecast_EP_std[['code', 'trade_date', 'forecast_EP_std']]
+    forecast_EP_std.sort_values(['code', 'trade_date'], inplace=True)
+    forecast_EP_std.reset_index(drop=True, inplace=True)
     factor = factor.merge(forecast_EP_std, on=['code', 'trade_date'], how='outer')
+    factor = factor[factor['trade_date'] >= pd.to_datetime('20140101')]
+    factor.reset_index(drop=True, inplace=True)
+    factor['code'] = factor['code'].apply(lambda x: x.split('.')[0])
     return factor
 
 
@@ -122,6 +128,27 @@ def calc_Earnings_Quality(data: pd.DataFrame):
     factor = data[['code', 'ann_date', 'ABS', 'ACF']]
     factor = ut._pubDate_align_tradedate(factor, 'ann_date', '20240831')
     return factor
+
+def cal_Profitability(basic):
+    basic['discDate'] = basic['end_date'].apply(ut._discDate)
+    basic = basic.query('ann_date<discDate').drop(columns='ann_date')\
+        .rename(columns={'discDate':'trade_date'})\
+        .sort_values(by=['code', 'end_date'])
+    basic.rename(columns={
+        'total_assets': 'TA', 
+        'total_revenue_TTM': 'Sales', 
+        'total_cogs_TTM': 'COGS', 
+        'n_income_attr_p_TTM': 'Earnings'
+    }, inplace=True)
+    basic['ATO'] = basic.eval('Sales/TA')
+    basic['GP'] = basic.eval('(Sales-COGS)/TA')
+    basic['GPM'] = basic.eval('(Sales-COGS)/Sales')
+    basic['ROA'] = basic.eval('Earnings/TA')
+    factor = basic[['code', 'trade_date', 'ATO', 'GP', 'GPM', 'ROA']]
+    factor = ut._pubDate_align_tradedate(factor, 'trade_date', '20240831')
+    #factor = factor.groupby(['code', 'trade_date'], as_index=False).mean()
+    return factor
+    
 
 def cal_Investment_Quality(data):
     periods = ['{}{}'.format(year, date) for year in range(2009, 2025) for date in ['0331', '0630', '0930', '1231']]
