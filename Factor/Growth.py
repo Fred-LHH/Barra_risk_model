@@ -1,3 +1,8 @@
+# -*- coding = utf-8 -*-
+# @Time: 2024/09/28
+# @Author: Haohan
+# @File: Growth.py
+# @Software: Vscode
 '''
 Grwoth
 
